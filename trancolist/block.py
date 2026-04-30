@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 """Filters adult websites out of a Tranco CSV"""
-from collections.abc import Iterator
+from collections.abc import Iterator, Iterable
 from dataclasses import dataclass
 from pathlib import Path
 import sys
@@ -44,15 +44,17 @@ def is_blocked(domain: Domain, blocklist: Blocklist) -> bool:
     return False
 
 
+def filter_domains(domains: Iterable[Domain], blocklist: Blocklist) -> Iterator[Domain]:
+    return filter(lambda domain: not is_blocked(domain, blocklist), domains)
+
+
 def main():
     tranco_path = parse_args()
     tranco_list = parse_tranco_list(tranco_path)
     adult_list = parse_adult_list()
     out_path = f"{tranco_path.stem}_filtered{tranco_path.suffix}"
     with open(out_path, 'w') as f:
-        for domain in tranco_list:
-            if not is_blocked(domain, adult_list):
-                f.write(domain.inner)
+        (f.write(domain.inner) for domain in filter_domains(tranco_list, adult_list))
 
 
 if __name__ == "__main__":
