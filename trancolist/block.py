@@ -2,9 +2,17 @@
 # SPDX-License-Identifier: MIT
 
 """Filters adult websites out of a Tranco CSV"""
-import sys
-from pathlib import Path
 from collections.abc import Iterator
+from dataclasses import dataclass
+from pathlib import Path
+import sys
+
+from . import Domain
+
+
+@dataclass
+class Blocklist:
+    inner: set[str]
 
 
 def parse_args() -> Path:
@@ -13,23 +21,23 @@ def parse_args() -> Path:
     return Path(sys.argv[1])
 
 
-def parse_adult_list() -> set[str]:
+def parse_adult_list() -> Blocklist:
     with open('adult-blocklist.txt') as f:
-        return set(f) # Create a set from all the lines
+        return Blocklist(set(f)) # Create a set from all the lines
 
 
-def parse_tranco_line(line: str) -> str:
-    return line.split(',')[1]
+def parse_tranco_line(line: str) -> Domain:
+    return Domain(line.split(',')[1])
 
 
-def parse_tranco_list(path: Path) -> Iterator[str]:
+def parse_tranco_list(path: Path) -> Iterator[Domain]:
     return map(parse_tranco_line, open(path))
 
 
-def is_blocked(tranco_domain: str, blocklist: set[str]) -> bool:
-    [domain, _sep, tld] = tranco_domain.rpartition('.') # a.b.example.com -> [a.b.example, com]
+def is_blocked(tranco_domain: Domain, blocklist: Blocklist) -> bool:
+    [domain, _sep, tld] = tranco_domain.inner.rpartition('.') # a.b.example.com -> [a.b.example, com]
     while domain:
-        if f"{domain}.{tld}" in blocklist:
+        if f"{domain}.{tld}" in blocklist.inner:
             return True
         [_, _sep, domain] = domain.partition('.') # a.b.example -> b.example
     return False
@@ -43,7 +51,7 @@ def main():
     with open(out_path, 'w') as f:
         for domain in tranco_list:
             if not is_blocked(domain, adult_list):
-                f.write(f"{domain}")
+                f.write(domain.inner)
 
 
 if __name__ == "__main__":
