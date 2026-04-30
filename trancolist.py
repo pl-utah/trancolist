@@ -7,6 +7,7 @@ from tranco import Tranco
 
 from credentials import load_credentials
 
+DEFAULT_CONFIG_JSON = Path("default.json")
 
 class ArgParser(Tap):
     list_id: str | None = None
@@ -14,7 +15,7 @@ class ArgParser(Tap):
     The list ID of an existing or pending list to get. Mutually exclusive with
     --config.
     """
-    config: Path | None = Path("default.json")
+    config: Path | None = DEFAULT_CONFIG_JSON
     """
     The path to a json file that configures a new Tranco list. The json file
     should follow the schema at
@@ -46,7 +47,9 @@ class ArgParser(Tap):
 
 
 def main():
-    ArgParser(underscores_to_dashes=True).parse_args()
+    args = ArgParser(underscores_to_dashes=True).parse_args()
+    if args.list_id and args.config == DEFAULT_CONFIG_JSON:
+        args.config = None
 
 
 if __name__ == "__main__":
