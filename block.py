@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import sys
 
-from . import Domain, parse_tranco_list
+from core import Domain, parse_tranco_list
 
 
 @dataclass

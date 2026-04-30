@@ -1,0 +1,12 @@
+[project]
+name = "trancolist"
+version = "0.1.0"
+authors = [
+    { name="Andrew Riachi", email="andrew.riachi@utah.edu" }
+]
+description = "A script for the browser people to get the top webpages."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.12"
+dependencies = []
