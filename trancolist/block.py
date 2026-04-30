@@ -18,6 +18,7 @@ class Blocklist:
 def parse_args() -> Path:
     if len(sys.argv) != 2:
         print(f"Usage: {sys.argv[0]} <tranco.csv>")
+        sys.exit(1)
     return Path(sys.argv[1])
 
 
