@@ -35,12 +35,12 @@ def parse_tranco_list(path: Path) -> Iterator[Domain]:
     return map(parse_tranco_line, open(path))
 
 
-def is_blocked(tranco_domain: Domain, blocklist: Blocklist) -> bool:
-    [domain, _sep, tld] = tranco_domain.inner.rpartition('.') # a.b.example.com -> [a.b.example, com]
-    while domain:
-        if f"{domain}.{tld}" in blocklist.inner:
+def is_blocked(domain: Domain, blocklist: Blocklist) -> bool:
+    [domain_part, _sep, tld] = domain.inner.rpartition('.') # a.b.example.com -> [a.b.example, com]
+    while domain_part:
+        if f"{domain_part}.{tld}" in blocklist.inner:
             return True
-        [_, _sep, domain] = domain.partition('.') # a.b.example -> b.example
+        [_, _sep, domain_part] = domain_part.partition('.') # a.b.example -> b.example
     return False
 
 
