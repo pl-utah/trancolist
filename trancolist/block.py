@@ -12,7 +12,7 @@ from . import Domain
 
 @dataclass
 class Blocklist:
-    inner: set[str]
+    inner: set[Domain]
 
 
 def parse_args() -> Path:
@@ -24,7 +24,7 @@ def parse_args() -> Path:
 
 def parse_adult_list() -> Blocklist:
     with open('adult-blocklist.txt') as f:
-        return Blocklist(set(f)) # Create a set from all the lines
+        return Blocklist(set(map(Domain, f))) # Create a set from all the lines
 
 
 def parse_tranco_line(line: str) -> Domain:
