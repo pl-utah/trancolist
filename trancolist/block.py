@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import sys
 
-from . import Domain
+from . import Domain, parse_tranco_list
 
 
 @dataclass
@@ -25,14 +25,6 @@ def parse_args() -> Path:
 def parse_adult_list() -> Blocklist:
     with open('adult-blocklist.txt') as f:
         return Blocklist(set(map(Domain, f))) # Create a set from all the lines
-
-
-def parse_tranco_line(line: str) -> Domain:
-    return Domain(line.split(',')[1])
-
-
-def parse_tranco_list(path: Path) -> Iterator[Domain]:
-    return map(parse_tranco_line, open(path))
 
 
 def is_blocked(domain: Domain, blocklist: Blocklist) -> bool:
