@@ -80,7 +80,7 @@ def load_config(config: Path) -> dict[str, Any]:
     return conf
     
 
-def handle_tranco_list(list: tranco.TrancoList, blocklist: block.Blocklist, out_dir: Path):
+def handle_tranco_list(list: tranco.TrancoList, blocklist: block.Blocklist, top_n_after_blocking: int | Literal['full'], out_dir: Path):
     # Write the webpage URL
     with (out_dir / f"{list.id()}_webpage.txt").open('w') as f:
         f.write(f"https://tranco-list.eu/list/{list.id()}/{list.top_n}")
@@ -90,6 +90,7 @@ def handle_tranco_list(list: tranco.TrancoList, blocklist: block.Blocklist, out_
     blocked_path = out_dir / f"{list.id()}_blocked.txt"
     with full_path.open('w') as full, filtered_path.open('w') as filtered, blocked_path.open('w') as blocked:
         domains = map(tranco.parse_tranco_line, list.stream)
+        num_included = 0
         for domain in domains:
             if domain is None:
                 continue
@@ -98,9 +99,12 @@ def handle_tranco_list(list: tranco.TrancoList, blocklist: block.Blocklist, out_
                 blocked.write(f"{domain.inner}\n")
             else:
                 filtered.write(f"{domain.inner}\n")
+                num_included += 1
+            if top_n_after_blocking != 'full' and num_included >= top_n_after_blocking:
+                break
 
 
-def filter_and_output_result(result: tranco.DownloadResult, blocklist: block.Blocklist, out_dir: Path):
+def filter_and_output_result(result: tranco.DownloadResult, blocklist: block.Blocklist, top_n_after_blocking: int | Literal['full'], out_dir: Path):
     try:
         out_dir.mkdir(parents=True, exist_ok=False)
     except FileExistsError:
@@ -122,7 +126,7 @@ def filter_and_output_result(result: tranco.DownloadResult, blocklist: block.Blo
             pending_file.touch()
         case tranco.TrancoList(_) as tranco_list:
             pending_file.unlink(missing_ok=True)
-            handle_tranco_list(tranco_list, blocklist, out_dir)
+            handle_tranco_list(tranco_list, blocklist, top_n_after_blocking, out_dir)
 
 
 def try_load_creds(creds_file: Path) -> credentials.Credentials | None:
@@ -132,9 +136,9 @@ def try_load_creds(creds_file: Path) -> credentials.Credentials | None:
         return None
 
 
-def maybe_request_email(tranco: tranco.Tranco, maybe_creds: credentials.Credentials | None, list_id: str, top_n: int | Literal['full']) -> str:
+def maybe_request_email(tranco: tranco.Tranco, maybe_creds: credentials.Credentials | None, list_id: str) -> str:
     if maybe_creds is not None:
-        tranco.request_email(maybe_creds.email, list_id, top_n)
+        tranco.request_email(maybe_creds.email, list_id, 'full')
         return " You will get an email when it is ready."
     else:
         return ""
@@ -154,16 +158,16 @@ def main():
         assert args.config is not None
         metadata = t.request_custom_list(creds, load_config(args.config))
     
-    result = t.download_if_available(metadata, args.top_n)
+    result = t.download_if_available(metadata, 'full') # Download full list. We want to get top_n domains _after_ blocking some.
     match result:
         case tranco.InProgress(_) as in_progress:
             if creds is None:
                 creds = try_load_creds(args.creds)
-            email_msg = maybe_request_email(t, creds, in_progress.id(), args.top_n)
+            email_msg = maybe_request_email(t, creds, in_progress.id())
             print(f"Tranco is generating list {in_progress.id()}.{email_msg} Rerun with --list-id once it is available.", file=sys.stderr)
         case tranco.TrancoList(_):
             pass
-    filter_and_output_result(result, blocklist, args.out_dir)
+    filter_and_output_result(result, blocklist, args.top_n, args.out_dir)
     sys.exit(0)
 
 
