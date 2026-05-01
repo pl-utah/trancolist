@@ -108,7 +108,7 @@ def filter_and_output_result(result: tranco.DownloadResult, blocklist: block.Blo
             if file.name == result.id():
                 next(files)
             (out_dir / f"{result.id()}.out_dir_exists").touch()
-            raise FileExistsError(f"{out_dir} exists and contains files other than one with the current pending list ID {result.id()}. Refusing to overwrite.")
+            raise FileExistsError(f"Directory {out_dir} exists and contains files other than one with the current pending list ID {result.id()}. Refusing to overwrite.")
         except StopIteration:
             pass
     # Write the metadata json whether pending or finished
