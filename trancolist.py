@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import argparse
+import datetime
 import json
 from pathlib import Path
 import sys
@@ -23,8 +24,10 @@ class ArgParser(Tap):
     """
     The path to a json file that configures a new Tranco list. The json file
     should follow the schema at
-    https://tranco-list.eu/api_documentation#datatypes-configuration. Mutually
-    exclusive with --list-id.
+    https://tranco-list.eu/api_documentation#datatypes-configuration, with one
+    exception. If "pastDays": N is set, will request the last N days of data from
+    today (this option is incompatible with "startDate" and "endDate").
+    Mutually exclusive with --list-id.
     """
     creds: Path = Path("credentials.json")
     """
@@ -65,7 +68,17 @@ class ExplicitAction(argparse.Action):
 
 def load_config(config: Path) -> dict[str, Any]:
     with open(config, 'r') as f:
-        return json.load(f)
+        conf = json.load(f)
+    if 'pastDays' in conf:
+        if ('startDate' in conf) or ('endDate' in conf):
+            print('Cannot specify "pastDays" with "startDate" or "endDate" in the config.')
+            sys.exit(1)
+        delta = datetime.timedelta(days=int(conf['pastDays']))
+        conf['endDate'] = datetime.date.today().isoformat()
+        conf['startDate'] = (datetime.date.today() - delta).isoformat()
+        del conf['pastDays']
+    return conf
+    
 
 
 def handle_tranco_list(list: tranco.TrancoList, blocklist: block.Blocklist, out_dir: Path):
