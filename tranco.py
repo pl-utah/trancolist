@@ -111,8 +111,10 @@ class Tranco:
                 raise
 
     def download_available(self, available: Available, top: int | Literal['full'] = 'full') -> TrancoList:
+        download_url = available.download_url().removesuffix("/full")
+        download_url = f"{download_url}/{top}"
         response = self.session.get(
-            f"{available.download_url()}/{top}",
+            download_url,
             stream=True
         )
         if response.status_code == 200:
