@@ -93,11 +93,11 @@ def handle_tranco_list(list: tranco.TrancoList, blocklist: block.Blocklist, out_
         for domain in domains:
             if domain is None:
                 continue
-            full.write(domain.inner)
+            full.write(f"{domain.inner}\n")
             if blocklist.blocks(domain):
-                blocked.write(domain.inner)
+                blocked.write(f"{domain.inner}\n")
             else:
-                filtered.write(domain.inner)
+                filtered.write(f"{domain.inner}\n")
 
 
 def filter_and_output_result(result: tranco.DownloadResult, blocklist: block.Blocklist, out_dir: Path):
