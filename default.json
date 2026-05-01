@@ -1,11 +1,11 @@
  {
-    "filterCRUXType": "global",
-    "listPrefix": "1000000",
-    "filterCRUX": "on",
-    "filterTLD": "false",
+    "providers": ["umbrella", "majestic", "crux", "radar"],
     "pastDays": 30,
-    "filterPLD": "off",
     "combinationMethod": "dowdall",
-    "filterCRUXMonth": "latest",
-    "providers": ["umbrella", "majestic", "crux", "radar"]
+    "listPrefix": "1000000",
+    "filterPLD": "off",
+    "filterTLD": "false",
+    "filterCRUX": "on",
+    "filterCRUXType": "global",
+    "filterCRUXMonth": "latest"
 }
