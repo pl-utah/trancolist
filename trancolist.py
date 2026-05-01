@@ -81,9 +81,6 @@ def load_config(config: Path) -> dict[str, Any]:
     
 
 def handle_tranco_list(list: tranco.TrancoList, blocklist: block.Blocklist, out_dir: Path):
-    # Write metadata.json
-    with (out_dir / "metadata.json").open('w') as f:
-        json.dump(list.metadata, f)
     # Write the lists
     full_path = out_dir / f"{list.id()}_full.txt"
     filtered_path = out_dir / f"{list.id()}_filtered.txt"
@@ -107,9 +104,13 @@ def filter_and_output_result(result: tranco.DownloadResult, blocklist: block.Blo
             file = next(files)
             if file.name == result.id():
                 next(files)
+            (out_dir / f"{result.id()}.out_dir_exists").touch()
             raise FileExistsError(f"{out_dir} exists and contains files other than one with the current pending list ID {result.id()}. Refusing to overwrite.")
         except StopIteration:
             pass
+    # Write the metadata json whether pending or finished
+    with (out_dir / f"{result.id()}_metadata.json").open('w') as f:
+        json.dump(result.metadata, f)
     pending_file = out_dir / f"{result.id()}.pending"
     match result:
         case tranco.InProgress(_) as in_progress:
