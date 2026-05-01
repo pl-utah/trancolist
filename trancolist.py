@@ -102,6 +102,8 @@ def handle_tranco_list(list: tranco.TrancoList, blocklist: block.Blocklist, top_
                 num_included += 1
             if top_n_after_blocking != 'full' and num_included >= top_n_after_blocking:
                 break
+        if top_n_after_blocking != 'full' and num_included < top_n_after_blocking:
+            print(f"Warning: Could only get {num_included} out of {top_n_after_blocking} requested domains after filtering.", file=sys.stderr)
 
 
 def filter_and_output_result(result: tranco.DownloadResult, blocklist: block.Blocklist, top_n_after_blocking: int | Literal['full'], out_dir: Path):
