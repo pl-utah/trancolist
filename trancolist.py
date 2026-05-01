@@ -112,11 +112,11 @@ def filter_and_output_result(result: tranco.DownloadResult, blocklist: block.Blo
     except FileExistsError:
         files = out_dir.iterdir()
         try:
-            file = next(files)
-            if file.name == result.id():
-                next(files)
-            (out_dir / f"{result.id()}.out_dir_exists").touch()
-            raise FileExistsError(f"Directory {out_dir} exists and contains files other than one with the current pending list ID {result.id()}. Refusing to overwrite.")
+            for i in range(3):
+                file = next(files)
+                if (i == 2) or (file.name not in [f"{result.id()}.pending", f"{result.id()}_metadata.json"]):
+                    (out_dir / f"{result.id()}.out_dir_exists").touch()
+                    raise FileExistsError(f"Directory {out_dir} exists and contains files other than {result.id()}.pending and {result.id()}_metadata.json. Refusing to overwrite.")
         except StopIteration:
             pass
     # Write the metadata json whether pending or finished
