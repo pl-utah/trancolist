@@ -8,4 +8,4 @@ A script for the browser people to get a list of the top webpages.
 
 `python trancolist.py --help` for more usage information.
 
-`python block.py [blocklist1.txt ...] <trancolist.txt>`
+`python block.py [blocklist1.txt ...] <trancolist.txt>` to filter an already downloaded tranco list through a set of blocklists.
