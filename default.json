@@ -2,7 +2,7 @@
     "providers": ["umbrella", "majestic", "crux", "radar"],
     "pastDays": 30,
     "combinationMethod": "dowdall",
-    "listPrefix": "1000000",
+    "listPrefix": "1000",
     "filterPLD": "off",
     "filterTLD": "false",
     "filterCRUX": "on",
