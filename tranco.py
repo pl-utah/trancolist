@@ -101,7 +101,11 @@ class Tranco:
         response = self.session.get(f"https://tranco-list.eu/api/lists/id/{id}")
         match response.status_code:
             case 200:
-                return Available(response.json())
+                if response.json().get('available'):
+                    return Available(response.json())
+                else:
+                    # retry successful status code if 'available' is not True
+                    return self.get_list_id(id)
             case 202:
                 return InProgress(response.json())
             case 404:
