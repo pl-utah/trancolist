@@ -31,9 +31,9 @@ def load_credentials(cred_path: Path | None) -> Credentials:
     if env_api_key:
         api_key = env_api_key
     if not email:
-        print("Missing email.")
+        print(f"Email was not found: not in {cred_path} and envvar TRANCO_EMAIL was not set.", file=sys.stderr)
     if not api_key:
-        print("Missing API key.")
+        print(f"API Key was not found: not in {cred_path} and envvar TRANCO_API_KEY was not set.", file=sys.stderr)
     if not (email and api_key):
         sys.exit(1)
     return Credentials(email, api_key)
