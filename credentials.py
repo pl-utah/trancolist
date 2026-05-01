@@ -20,7 +20,7 @@ def load_credentials(cred_path: Path | None) -> Credentials:
     TRANCO_API_KEY first, then from the json file at `cred_path`.
     """
     creds: dict[str, str | None] = { "email": None, "api_key": None }
-    if cred_path:
+    if cred_path and cred_path.is_file():
         with open(cred_path) as f:
             creds.update(json.load(f))
     env_email = os.environ.get("TRANCO_EMAIL")
