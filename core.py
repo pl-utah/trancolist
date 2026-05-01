@@ -2,10 +2,8 @@
 # SPDX-License-Identifier: MIT
 
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Iterator
 
 
-@dataclass
+@dataclass(frozen=True)
 class Domain:
     inner: str

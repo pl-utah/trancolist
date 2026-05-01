@@ -12,7 +12,7 @@ from core import Domain
 import tranco
 
 
-@dataclass
+@dataclass(frozen=True)
 class Blocklist:
     inner: set[Domain]
 
