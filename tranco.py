@@ -130,8 +130,10 @@ class Tranco:
                 return self.download_available(available, top)
 
 
-def parse_tranco_line(line: str) -> Domain:
-    return Domain(line.split(',')[1])
+def parse_tranco_line(line: bytes) -> Domain | None:
+    if line == b'':
+        return None
+    return Domain(line.decode().split(',')[1])
 
 
 def raise_other_status(response: requests.Response):

@@ -89,8 +89,10 @@ def handle_tranco_list(list: tranco.TrancoList, blocklist: block.Blocklist, out_
     filtered_path = out_dir / f"{list.id()}_filtered.txt"
     blocked_path = out_dir / f"{list.id()}_blocked.txt"
     with full_path.open('w') as full, filtered_path.open('w') as filtered, blocked_path.open('w') as blocked:
-        domains = map(lambda b: tranco.parse_tranco_line(str(b)), list.stream)
+        domains = map(tranco.parse_tranco_line, list.stream)
         for domain in domains:
+            if domain is None:
+                continue
             full.write(domain.inner)
             if blocklist.blocks(domain):
                 blocked.write(domain.inner)
