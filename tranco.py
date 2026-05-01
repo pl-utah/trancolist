@@ -30,6 +30,7 @@ class InProgress:
 class TrancoList:
     metadata: dict[str, Any]
     stream: Iterator[str]
+    top_n: int | Literal['full']
 
     def id(self) -> str:
         return self.metadata['list_id']
@@ -115,7 +116,7 @@ class Tranco:
             stream=True
         )
         if response.status_code == 200:
-            return TrancoList(available.metadata, response.iter_lines())
+            return TrancoList(available.metadata, response.iter_lines(), top)
         raise_other_status(response)
         raise
 

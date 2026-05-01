@@ -81,6 +81,9 @@ def load_config(config: Path) -> dict[str, Any]:
     
 
 def handle_tranco_list(list: tranco.TrancoList, blocklist: block.Blocklist, out_dir: Path):
+    # Write the webpage URL
+    with (out_dir / f"{list.id()}_webpage.txt").open('w') as f:
+        f.write(f"https://tranco-list.eu/list/{list.id()}/{list.top_n}")
     # Write the lists
     full_path = out_dir / f"{list.id()}_full.txt"
     filtered_path = out_dir / f"{list.id()}_filtered.txt"
