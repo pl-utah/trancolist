@@ -4,15 +4,25 @@
 """Filters adult websites out of a Tranco CSV"""
 from collections.abc import Iterator, Iterable
 from dataclasses import dataclass
+import itertools
 from pathlib import Path
 import sys
 
-from core import Domain, parse_tranco_list
+from core import Domain 
+import tranco
 
 
 @dataclass
 class Blocklist:
     inner: set[Domain]
+
+    def blocks(self, domain: Domain) -> bool:
+        [domain_part, _sep, tld] = domain.inner.rpartition('.') # a.b.example.com -> [a.b.example, com]
+        while domain_part:
+            if f"{domain_part}.{tld}" in self.inner:
+                return True
+            [_, _sep, domain_part] = domain_part.partition('.') # a.b.example -> b.example
+        return False
 
 
 def parse_args() -> Path:
@@ -22,27 +32,23 @@ def parse_args() -> Path:
     return Path(sys.argv[1])
 
 
+def parse_blocklists(lists: Iterable[Iterable[str]]) -> Blocklist:
+    flattened = itertools.chain.from_iterable(lists)
+    return Blocklist(set(map(Domain, flattened))) # Create a set from all the lines
+
+
 def parse_adult_list() -> Blocklist:
     with open('adult-blocklist.txt') as f:
-        return Blocklist(set(map(Domain, f))) # Create a set from all the lines
-
-
-def is_blocked(domain: Domain, blocklist: Blocklist) -> bool:
-    [domain_part, _sep, tld] = domain.inner.rpartition('.') # a.b.example.com -> [a.b.example, com]
-    while domain_part:
-        if f"{domain_part}.{tld}" in blocklist.inner:
-            return True
-        [_, _sep, domain_part] = domain_part.partition('.') # a.b.example -> b.example
-    return False
+        return parse_blocklists(itertools.repeat(f, 1))
 
 
 def filter_domains(domains: Iterable[Domain], blocklist: Blocklist) -> Iterator[Domain]:
-    return filter(lambda domain: not is_blocked(domain, blocklist), domains)
+    return filter(lambda domain: not blocklist.blocks(domain), domains)
 
 
 def main():
     tranco_path = parse_args()
-    tranco_list = parse_tranco_list(tranco_path)
+    tranco_list = map(tranco.parse_tranco_line, open(tranco_path))
     adult_list = parse_adult_list()
     out_path = f"{tranco_path.stem}_filtered{tranco_path.suffix}"
     with open(out_path, 'w') as f:

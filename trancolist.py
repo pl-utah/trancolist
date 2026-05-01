@@ -2,13 +2,15 @@
 # SPDX-License-Identifier: MIT
 
 import argparse
+import json
 from pathlib import Path
 import sys
 from tap import Tap, Positional
-from tranco import Tranco
-from typing import Literal
+from typing import Any, Literal
 
-from credentials import load_credentials
+import block
+import credentials
+import tranco
 
 
 class ArgParser(Tap):
@@ -35,7 +37,7 @@ class ArgParser(Tap):
     A list of files. Each file is a list of domains to exclude from the
     final list, one on each line.
     """
-    top_n: int | Literal['all'] = 200
+    top_n: int | Literal['full'] = 200
     """The number of domains to include"""
     force: bool = False
     """Overwrite `out_dir` if it already exists"""
@@ -61,8 +63,50 @@ class ExplicitAction(argparse.Action):
         setattr(namespace, self.dest+'_nondefault', True)
 
 
+def load_config(config: Path) -> dict[str, Any]:
+    with open(config, 'r') as f:
+        return json.load(f)
+
+
+def handle_tranco_list(list: tranco.TrancoList, blocklist: block.Blocklist, out_dir: Path):
+    # Make output directory
+    out_dir.mkdir(parents=True, exist_ok=False) # raise error if already exists
+    # Write metadata.json
+    with (out_dir / "metadata.json").open('w') as f:
+        json.dump(list.metadata, f)
+    # Write the lists
+    full_path = out_dir / f"{list.id()}_full.txt"
+    filtered_path = out_dir / f"{list.id()}_filtered.txt"
+    blocked_path = out_dir / f"{list.id()}_blocked.txt"
+    with full_path.open('w') as full, filtered_path.open('w') as filtered, blocked_path.open('w') as blocked:
+        domains = map(tranco.parse_tranco_line, list.stream)
+        for domain in domains:
+            full.write(domain.inner)
+            if blocklist.blocks(domain):
+                blocked.write(domain.inner)
+            else:
+                filtered.write(domain.inner)
+
+
 def main():
     args = ArgParser(underscores_to_dashes=True).parse_args()
+    # Try building blocklist first.
+    blocklist = block.parse_blocklists(map(open, args.blocklists))
+    # Then create the Tranco session.
+    t = tranco.Tranco()
+    if args.list_id is not None:
+        metadata = t.get_list_id(args.list_id)
+    else:
+        creds = credentials.load_credentials(args.creds)
+        assert args.config is not None
+        metadata = t.request_custom_list(creds, load_config(args.config))
+    
+    match t.download_if_available(metadata, args.top_n):
+        case tranco.InProgress(_) as in_progress:
+            print(f"Tranco is generating list {in_progress.id()}. Rerun with --list-id once it is available.", file=sys.stderr)
+        case tranco.TrancoList(_) as tranco_list:
+            handle_tranco_list(tranco_list, blocklist, args.out_dir)
+    sys.exit(0)
 
 
 if __name__ == "__main__":

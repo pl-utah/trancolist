@@ -2,11 +2,12 @@
 # Copyright (c) 2020 Victor Le Pochat
 # SPDX-License-Identifier: MIT
 
+from core import Domain
 from credentials import Credentials
 from dataclasses import dataclass
 import platform
 import requests
-from typing import Any, Iterator 
+from typing import Any, Iterator, Literal
 
 
 @dataclass
@@ -29,6 +30,9 @@ class InProgress:
 class TrancoList:
     metadata: dict[str, Any]
     stream: Iterator[str]
+
+    def id(self) -> str:
+        return self.metadata['list_id']
 
 
 MetadataResult = Available | InProgress
@@ -92,18 +96,21 @@ class Tranco:
                 response.raise_for_status()
                 raise
 
-    def download_available(self, available: Available, top: int | None = None) -> TrancoList:
-        top_url = top if top is not None else "full"
+    def download_available(self, available: Available, top: int | Literal['full'] = 'full') -> TrancoList:
         response = self.session.get(
-            f"{available.download_url()}/{top_url}",
+            f"{available.download_url()}/{top}",
             stream=True
         )
         response.raise_for_status()
         return TrancoList(available.metadata, response.iter_lines())
 
-    def download_if_available(self, metadata: MetadataResult, top: int | None = None) -> DownloadResult:
+    def download_if_available(self, metadata: MetadataResult, top: int | Literal['full'] = 'full') -> DownloadResult:
         match metadata:
-            case InProgress(_):
-                return metadata
-            case Available(_):
-                return self.download_available(metadata, top)
+            case InProgress(_) as in_progress:
+                return in_progress
+            case Available(_) as available:
+                return self.download_available(available, top)
+
+
+def parse_tranco_line(line: str) -> Domain:
+    return Domain(line.split(',')[1])
