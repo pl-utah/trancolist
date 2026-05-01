@@ -83,6 +83,20 @@ class Tranco:
                 response.raise_for_status()
                 raise
     
+    def request_email(self, email: str, list_id: str, list_size: int | Literal['full']):
+        response = self.session.post(
+            "https://tranco-list.eu/notify-email",
+            data={
+                "email": email,
+                "list_id": list_id,
+                "list_size": list_size,
+            }
+        )
+        if response.status_code == 202:
+            return
+        response.raise_for_status()
+        raise RuntimeError(f"Unexpected status code {response.status_code}", response)
+    
     def get_list_id(self, id: str) -> MetadataResult:
         response = self.session.get(f"https://tranco-list.eu/api/lists/id/{id}")
         match response.status_code:

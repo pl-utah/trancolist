@@ -108,6 +108,7 @@ def main():
     # Then create the Tranco session.
     t = tranco.Tranco()
     if args.list_id is not None:
+        creds = None
         metadata = t.get_list_id(args.list_id)
     else:
         creds = credentials.load_credentials(args.creds)
@@ -116,7 +117,17 @@ def main():
     
     match t.download_if_available(metadata, args.top_n):
         case tranco.InProgress(_) as in_progress:
-            print(f"Tranco is generating list {in_progress.id()}. Rerun with --list-id once it is available.", file=sys.stderr)
+            if creds is None:
+                try:
+                    creds = credentials.load_credentials(args.creds)
+                except credentials.MissingCredentialsError:
+                    pass
+            if creds is not None:
+                t.request_email(creds.email, in_progress.id(), args.top_n)
+                email_msg = " You will get an email when it is ready."
+            else:
+                email_msg = ""
+            print(f"Tranco is generating list {in_progress.id()}.{email_msg} Rerun with --list-id once it is available.", file=sys.stderr)
         case tranco.TrancoList(_) as tranco_list:
             handle_tranco_list(tranco_list, blocklist, args.out_dir)
     sys.exit(0)
