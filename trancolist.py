@@ -80,10 +80,7 @@ def load_config(config: Path) -> dict[str, Any]:
     return conf
     
 
-
 def handle_tranco_list(list: tranco.TrancoList, blocklist: block.Blocklist, out_dir: Path):
-    # Make output directory
-    out_dir.mkdir(parents=True, exist_ok=False) # raise error if already exists
     # Write metadata.json
     with (out_dir / "metadata.json").open('w') as f:
         json.dump(list.metadata, f)
@@ -101,6 +98,42 @@ def handle_tranco_list(list: tranco.TrancoList, blocklist: block.Blocklist, out_
                 filtered.write(domain.inner)
 
 
+def filter_and_output_result(result: tranco.DownloadResult, blocklist: block.Blocklist, out_dir: Path):
+    try:
+        out_dir.mkdir(parents=True, exist_ok=False)
+    except FileExistsError:
+        files = out_dir.iterdir()
+        try:
+            file = next(files)
+            if file.name == result.id():
+                next(files)
+            raise FileExistsError(f"{out_dir} exists and contains files other than one with the current pending list ID {result.id()}. Refusing to overwrite.")
+        except StopIteration:
+            pass
+    pending_file = out_dir / f"{result.id()}.pending"
+    match result:
+        case tranco.InProgress(_) as in_progress:
+            pending_file.touch()
+        case tranco.TrancoList(_) as tranco_list:
+            pending_file.unlink(missing_ok=True)
+            handle_tranco_list(tranco_list, blocklist, out_dir)
+
+
+def try_load_creds(creds_file: Path) -> credentials.Credentials | None:
+    try:
+        return credentials.load_credentials(creds_file)
+    except credentials.MissingCredentialsError:
+        return None
+
+
+def maybe_request_email(tranco: tranco.Tranco, maybe_creds: credentials.Credentials | None, list_id: str, top_n: int | Literal['full']) -> str:
+    if maybe_creds is not None:
+        tranco.request_email(maybe_creds.email, list_id, top_n)
+        return " You will get an email when it is ready."
+    else:
+        return ""
+
+
 def main():
     args = ArgParser(underscores_to_dashes=True).parse_args()
     # Try building blocklist first.
@@ -115,21 +148,16 @@ def main():
         assert args.config is not None
         metadata = t.request_custom_list(creds, load_config(args.config))
     
-    match t.download_if_available(metadata, args.top_n):
+    result = t.download_if_available(metadata, args.top_n)
+    match result:
         case tranco.InProgress(_) as in_progress:
             if creds is None:
-                try:
-                    creds = credentials.load_credentials(args.creds)
-                except credentials.MissingCredentialsError:
-                    pass
-            if creds is not None:
-                t.request_email(creds.email, in_progress.id(), args.top_n)
-                email_msg = " You will get an email when it is ready."
-            else:
-                email_msg = ""
+                creds = try_load_creds(args.creds)
+            email_msg = maybe_request_email(t, creds, in_progress.id(), args.top_n)
             print(f"Tranco is generating list {in_progress.id()}.{email_msg} Rerun with --list-id once it is available.", file=sys.stderr)
-        case tranco.TrancoList(_) as tranco_list:
-            handle_tranco_list(tranco_list, blocklist, args.out_dir)
+        case tranco.TrancoList(_):
+            pass
+    filter_and_output_result(result, blocklist, args.out_dir)
     sys.exit(0)
 
 
