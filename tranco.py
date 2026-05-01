@@ -80,9 +80,9 @@ class Tranco:
             case 429:
                 raise TooManyRequests()
             case _:
-                response.raise_for_status()
+                raise_other_status(response)    
                 raise
-    
+
     def request_email(self, email: str, list_id: str, list_size: int | Literal['full']):
         response = self.session.post(
             "https://tranco-list.eu/notify-email",
@@ -94,9 +94,8 @@ class Tranco:
         )
         if response.status_code == 202:
             return
-        response.raise_for_status()
-        raise RuntimeError(f"Unexpected status code {response.status_code}", response)
-    
+        raise_other_status(response)
+
     def get_list_id(self, id: str) -> MetadataResult:
         response = self.session.get(f"https://tranco-list.eu/api/lists/id/{id}")
         match response.status_code:
@@ -107,7 +106,7 @@ class Tranco:
             case 404:
                 raise ValueError(f"List with ID {id} not found.")
             case _:
-                response.raise_for_status()
+                raise_other_status(response)
                 raise
 
     def download_available(self, available: Available, top: int | Literal['full'] = 'full') -> TrancoList:
@@ -115,8 +114,10 @@ class Tranco:
             f"{available.download_url()}/{top}",
             stream=True
         )
-        response.raise_for_status()
-        return TrancoList(available.metadata, response.iter_lines())
+        if response.status_code == 200:
+            return TrancoList(available.metadata, response.iter_lines())
+        raise_other_status(response)
+        raise
 
     def download_if_available(self, metadata: MetadataResult, top: int | Literal['full'] = 'full') -> DownloadResult:
         match metadata:
@@ -128,3 +129,8 @@ class Tranco:
 
 def parse_tranco_line(line: str) -> Domain:
     return Domain(line.split(',')[1])
+
+
+def raise_other_status(response: requests.Response):
+    response.raise_for_status()
+    raise RuntimeError(f"Unexpected status code {response.status_code}", response)
