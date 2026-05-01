@@ -29,7 +29,7 @@ class InProgress:
 @dataclass
 class TrancoList:
     metadata: dict[str, Any]
-    stream: Iterator[str]
+    stream: Iterator[bytes]
     top_n: int | Literal['full']
 
     def id(self) -> str:
