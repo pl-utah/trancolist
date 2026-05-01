@@ -1,6 +1,6 @@
 # trancolist
 
-A script for the browser people to get the top webpages.
+A script for the browser people to get a list of the top webpages.
 
 ## Usage
 
