@@ -1,5 +1,5 @@
  {
-    "providers": ["umbrella", "majestic", "crux", "radar"],
+    "providers": ["majestic", "crux"],
     "pastDays": 30,
     "combinationMethod": "dowdall",
     "listPrefix": "1000",
