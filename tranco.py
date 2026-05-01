@@ -86,7 +86,7 @@ class Tranco:
 
     def request_email(self, email: str, list_id: str, list_size: int | Literal['full']):
         response = self.session.post(
-            "https://tranco-list.eu/notify-email",
+            "https://tranco-list.eu/notify_email",
             data={
                 "email": email,
                 "list_id": list_id,
